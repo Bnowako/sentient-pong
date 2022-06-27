@@ -1,7 +1,6 @@
 from .paddle import Paddle
 from .ball import Ball
 import pygame
-import random
 pygame.init()
 
 
@@ -42,8 +41,6 @@ class Game:
         self.left_hits = 0
         self.right_hits = 0
         self.window = window
-        # self.won = ''
-        # self.done = False
         
 
     def _draw_score(self):
@@ -150,8 +147,6 @@ class Game:
         :returns: GameInformation instance stating score 
                   and hits of each paddle.
         """
-        # if(self.done):
-        #     self.reset()
         self.ball.move()
         self._handle_collision()
 
@@ -159,16 +154,10 @@ class Game:
             self.ball.reset()
             self.right_score += 1
             self.current_gem_left_hits = 0
-            # if(self.right_score == 3):
-                # self.done = True
-                # self.won = 'right' 
         elif self.ball.x > self.window_width:
             self.ball.reset()
             self.left_score += 1
             self.current_gem_left_hits = 0
-            # if(self.left_score == 3):
-                # self.done = True
-                # self.won = 'left'
 
         game_info = GameInformation(
             self.left_hits, self.right_hits, self.left_score, self.right_score)
@@ -184,8 +173,6 @@ class Game:
         self.right_score = 0
         self.left_hits = 0
         self.right_hits = 0
-        # self.done = False
-        # self.won = ''
 
     def play_predicted_move(self,left, move):
         index = move.index(max(move))
