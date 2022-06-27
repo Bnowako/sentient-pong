@@ -8,7 +8,7 @@ from helper import plot
 from pong import Game
 import pygame
 import matplotlib.pyplot as plt
-
+import os
 
 from pong.game import GameInformation
 MAX_MEMORY = 100_000
@@ -24,7 +24,9 @@ class Agent:
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
         self.model = Linear_QNet(4, 256, 2, name)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
-
+        if os.path.exists(f'./model/{name}model.pth'):
+            self.model.load_state_dict(torch.load(f'./model/{name}model.pth'))
+    
 
     def get_state(self, game, left):
         ball = game.ball
@@ -48,18 +50,17 @@ class Agent:
         return np.array(state, dtype=int)
 
     def remember(self, state, action, reward, next_state, done):
-        self.memory.append((state, action, reward, next_state, done)) # popleft if MAX_MEMORY is reached
+        self.memory.append((state, action, reward, next_state, done))
 
     def train_long_memory(self):
         if len(self.memory) > BATCH_SIZE:
-            mini_sample = random.sample(self.memory, BATCH_SIZE) # list of tuples
+            mini_sample = random.sample(self.memory, BATCH_SIZE)
         else:
             mini_sample = self.memory
 
         states, actions, rewards, next_states, dones = zip(*mini_sample)
         self.trainer.train_step(states, actions, rewards, next_states, dones)
-        #for state, action, reward, nexrt_state, done in mini_sample:
-        #    self.trainer.train_step(state, action, reward, next_state, done)
+
 
     def train_short_memory(self, state, action, reward, next_state, done):
         self.trainer.train_step(state, action, reward, next_state, done)
@@ -79,6 +80,7 @@ class Agent:
 
         return final_move
 
+
 def train_pong():
     plt_left_scores = []
     plt_mean_left_scores = []
@@ -86,7 +88,8 @@ def train_pong():
     plt_mean_left_hits = []
     total_left_scores = []
     total_left_hits = []
-    record = 0
+    left_record = 0
+    right_record = 0
     agent = Agent("left-")
     agent2 = Agent("right-")
     
@@ -132,16 +135,19 @@ def train_pong():
         
         if(done):
             print('Game', agent.n_games, 'Left hits', game.left_hits,'Right hits',game.right_hits)
-            print('Game', agent.n_games, 'Left score', game.left_score,'Right score',game.right_score, 'Record:', record)
+            print('Game', agent.n_games, 'Left score', game.left_score,'Right score',game.right_score, 'Record:', left_record)
             game.reset()
             agent.n_games += 1
             agent.train_long_memory()
             agent2.train_long_memory()
             prev_game_info = GameInformation(0,0,0,0)
 
-            if game_info.left_score > record:
-                record = game_info.left_score
+            if game_info.left_score > left_record:
+                left_record = game_info.left_score
                 agent.model.save()
+            if game_info.right_score > right_record:
+                left_record = game_info.right_score
+                agent2.model.save()
 
             # plot_results(plt_left_scores, total_left_scores, plt_mean_left_scores, agent, game_info.left_score)
             plot_results(plt_left_hits, total_left_hits, plt_mean_left_hits, agent, game_info.left_hits)
@@ -158,10 +164,9 @@ def play_with_human():
     total_left_hits = []
     record = 0
     agent = Agent("left-")
-    agent.model.load_state_dict(torch.load('model/left-model.pth'))
 
     height = 500
-    width = 700
+    width = 1000
 
     win = pygame.display.set_mode((width, height))
     game = Game(win, width, height)
@@ -198,7 +203,6 @@ def play_with_human():
         keys = pygame.key.get_pressed()
         
         if keys[pygame.K_w]:
-            print('W')
             game.move_paddle(left=False, up=True)
         elif keys[pygame.K_s]:
             game.move_paddle(left=False, up=False)
@@ -215,9 +219,6 @@ def play_with_human():
             if game_info.left_score > record:
                 record = game_info.left_score
                 agent.model.save()
-
-            # plot_results(plt_left_scores, total_left_scores, plt_mean_left_scores, agent, game_info.left_score)
-            plot_results(plt_left_hits, total_left_hits, plt_mean_left_hits, agent, game_info.left_hits)
 
         game.draw(draw_score=True, draw_hits=True)
         pygame.display.update()
@@ -254,14 +255,14 @@ def add_rewards(game_info, ball_y, final_move, game, prev_game_info, final_move2
         if game_info.left_score > prev_game_info.left_score:
             if ball_y < game.right_paddle.y:
                 if final_move2[0] != 1:
-                    reward2 -= 10
+                    reward2 -= 5
                 if final_move2[0] == 1:
-                    reward2 += 10
+                    reward2 += 5
             elif ball_y > game.right_paddle.y:
                 if final_move2[2] != 1:
-                    reward2 -= 10
+                    reward2 -= 5
                 else:
-                    reward2 +=10
+                    reward2 +=5
         
         prev_game_info.right_score = game_info.right_score
 
@@ -276,5 +277,5 @@ def plot_results(plt_scores, all_scores, mean_scores, agent, value):
 
 
 if __name__ == '__main__':
-    # train_pong()
-    play_with_human()
+    train_pong()
+    # play_with_human()
