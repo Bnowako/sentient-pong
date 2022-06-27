@@ -9,6 +9,7 @@ from pong import Game
 import pygame
 import matplotlib.pyplot as plt
 import os
+from datetime import datetime
 
 from pong.game import GameInformation
 MAX_MEMORY = 100_000
@@ -19,10 +20,10 @@ class Agent:
 
     def __init__(self, name):
         self.n_games = 0
-        self.epsilon = 1 # randomness
-        self.gamma = 0.9 # discount rate
+        self.epsilon = 42 # randomness
+        self.gamma = 1 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = Linear_QNet(4, 256, 2, name)
+        self.model = Linear_QNet(3, 128, 2, name)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
         if os.path.exists(f'./model/{name}model.pth'):
             self.model.load_state_dict(torch.load(f'./model/{name}model.pth'))
@@ -36,15 +37,11 @@ class Agent:
         paddle = left_paddle if left else right_paddle
         velocity = 1 if ball.x_vel < 0 else -1
 
-        # distance =  abs(ball.x - paddle.x) / game.window_width
-        dif_x = paddle.x - ball.x
-        dif_y = paddle.y - ball.y 
-        dif_x = paddle.x - ball.x
+        dif_x = abs(paddle.x - ball.x)
         dif_y = paddle.y - ball.y 
         state = [
             velocity,
             dif_y > 0,
-            dif_y < 0,
             dif_x / game.window_width,
         ]
         return np.array(state, dtype=int)
@@ -61,14 +58,13 @@ class Agent:
         states, actions, rewards, next_states, dones = zip(*mini_sample)
         self.trainer.train_step(states, actions, rewards, next_states, dones)
 
-
     def train_short_memory(self, state, action, reward, next_state, done):
         self.trainer.train_step(state, action, reward, next_state, done)
 
     def get_action(self, state):
         # random moves: tradeoff exploration / exploitation
         self.epsilon = 80 - self.n_games
-        final_move = [0,0,0]
+        final_move = [0,0]
         if random.randint(0, 200) < self.epsilon:
             move = random.randint(0, 1)
             final_move[move] = 1
@@ -77,7 +73,6 @@ class Agent:
             prediction = self.model(state0)
             move = torch.argmax(prediction).item()
             final_move[move] = 1
-
         return final_move
 
 
@@ -106,7 +101,7 @@ def train_pong():
     done = False
 
     while run:
-        clock.tick(1000)
+        clock.tick(600)
         state_old = agent.get_state(game, True)
         state_old2 = agent2.get_state(game, False)
 
@@ -114,10 +109,10 @@ def train_pong():
         final_move2 = agent2.get_action(state_old2)
 
         game.play_predicted_move(True, final_move)
-        ball_y = game.play_predicted_move(False, final_move2)
+        ball, current_gem_left_hits = game.play_predicted_move(False, final_move2)
         game_info = game.loop()
         
-        reward, reward2 = add_rewards(game_info, ball_y, final_move, game, prev_game_info, final_move2)
+        reward, reward2 = add_rewards(game_info, ball, final_move, game, prev_game_info, final_move2, current_gem_left_hits)
         
         state_new = agent.get_state(game, True)
         state_new2 = agent2.get_state(game, False)
@@ -185,10 +180,10 @@ def play_with_human():
 
         final_move = agent.get_action(state_old)
 
-        ball_y = game.play_predicted_move(True, final_move)
+        ball_y, current_gem_left_hits = game.play_predicted_move(True, final_move)
         game_info = game.loop()
         
-        reward, reward2 = add_rewards(game_info, ball_y, final_move, game, prev_game_info, None)
+        reward, reward2 = add_rewards(game_info, ball_y, final_move, game, prev_game_info, None, current_gem_left_hits)
         
         state_new = agent.get_state(game, True)
 
@@ -225,47 +220,34 @@ def play_with_human():
         pygame.event.pump()
     
 
-def add_rewards(game_info, ball_y, final_move, game, prev_game_info, final_move2):
-    if game_info.left_hits > prev_game_info.left_hits:
-        reward = 15
-        prev_game_info.left_hits = game_info.left_hits
-    else:
-        reward = 0
-    if(final_move != None):
-        if game_info.right_score > prev_game_info.right_score:
-            if ball_y < game.left_paddle.y:
-                if final_move[0] != 1:
-                    reward -= 10
-                if final_move[0] == 1:
-                    reward += 10
-            elif ball_y > game.left_paddle.y:
-                if final_move[2] != 1:
-                    reward -= 10
-                else:
-                    reward +=10
-        
-        prev_game_info.right_score = game_info.right_score
+def add_rewards(game_info, ball, final_move, game, prev_game_info, final_move2, current_gem_left_hits):
+    reward = 0
+
+    if game_info.left_score > prev_game_info.left_score:
+        if current_gem_left_hits >= 1:
+            reward += 1
+    elif game_info.left_hits > prev_game_info.left_hits:
+            reward += 1
+    if game_info.right_score > prev_game_info.right_score:
+        reward -= 1
     
     if game_info.right_hits > prev_game_info.right_hits:
         reward2 = 15
-        prev_game_info.right_hits = game_info.right_hits
     else :
         reward2 = 0
+    
     if(final_move2 != None):
         if game_info.left_score > prev_game_info.left_score:
-            if ball_y < game.right_paddle.y:
-                if final_move2[0] != 1:
-                    reward2 -= 5
-                if final_move2[0] == 1:
-                    reward2 += 5
-            elif ball_y > game.right_paddle.y:
-                if final_move2[2] != 1:
-                    reward2 -= 5
-                else:
-                    reward2 +=5
-        
-        prev_game_info.right_score = game_info.right_score
+            reward2 -= 10
 
+    prev_game_info.left_score = game_info.left_score
+    prev_game_info.right_score = game_info.right_score
+    prev_game_info.right_hits = game_info.right_hits
+    prev_game_info.left_hits = game_info.left_hits
+
+
+    if(reward != 0):
+        print(f'time:{datetime.now()}:  {reward} ')
     return reward, reward2
 
 def plot_results(plt_scores, all_scores, mean_scores, agent, value):

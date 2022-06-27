@@ -180,6 +180,6 @@ class Game:
             self.move_paddle(left, up = True)
         if index == 1:
             self.move_paddle(left, up = False)
-        return self.ball.y
+        return self.ball, self.current_gem_left_hits
 
 
