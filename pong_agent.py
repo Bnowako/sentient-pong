@@ -7,6 +7,8 @@ from model import Linear_QNet, QTrainer
 from helper import plot
 from pong import Game
 import pygame
+import matplotlib.pyplot as plt
+
 
 from pong.game import GameInformation
 MAX_MEMORY = 100_000
@@ -78,13 +80,15 @@ class Agent:
         return final_move
 
 def train_pong():
-    plot_scores = []
-    plot_mean_scores = []
-    total_score = 0
+    plt_left_scores = []
+    plt_mean_left_scores = []
+    plt_left_hits = []
+    plt_mean_left_hits = []
+    total_left_scores = []
+    total_left_hits = []
     record = 0
     agent = Agent("left-")
     agent2 = Agent("right-")
-    # game = SnakeGameAI()
     
     height = 500
     width = 700
@@ -115,7 +119,7 @@ def train_pong():
         state_new = agent.get_state(game, True)
         state_new2 = agent.get_state(game, False)
 
-        if game_info.right_score + game_info.left_score == 20 or game_info.left_hits > 50:
+        if game_info.right_score + game_info.left_score == 50 or game_info.left_hits > 200:
             done = True
         else:
             done = False
@@ -142,11 +146,8 @@ def train_pong():
                 agent.model.save()
 
 
-            plot_scores.append(game_info.left_score)
-            total_score += game_info.left_score
-            mean_score = total_score / agent.n_games
-            plot_mean_scores.append(mean_score)
-            plot(plot_scores, plot_mean_scores)
+            # plot_results(plt_left_scores, total_left_scores, plt_mean_left_scores, agent, game_info.left_score)
+            plot_results(plt_left_hits, total_left_hits, plt_mean_left_hits, agent, game_info.left_hits)
 
         game.draw(draw_score=True, draw_hits=True)
         pygame.display.update()
@@ -180,6 +181,12 @@ def add_rewards(game_info, ball_y, final_move, game, prev_game_info):
         reward2 = 0
     return reward, reward2
 
+def plot_results(plt_scores, all_scores, mean_scores, agent, value):
+    plt_scores.append(value)
+    all_scores.append(value)
+    mean_score = sum(all_scores) / agent.n_games
+    mean_scores.append(mean_score)
+    plot(plt_scores, mean_scores)
 
 
 if __name__ == '__main__':

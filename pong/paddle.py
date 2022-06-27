@@ -1,8 +1,9 @@
 import pygame
+from props import * 
 
 
 class Paddle:
-    VEL = 4
+    VEL = 4 * PADLLE_MULTIPLIER
     WIDTH = 20
     HEIGHT = 100
 

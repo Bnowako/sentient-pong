@@ -1,10 +1,10 @@
 import pygame
 import math
 import random
-
+from props import * 
 
 class Ball:
-    MAX_VEL = 5
+    MAX_VEL = 5 * BALL_MULTIPLIER
     RADIUS = 7
 
     def __init__(self, x, y):
@@ -14,8 +14,8 @@ class Ball:
         angle = self._get_random_angle(-30, 30, [0])
         pos = 1 if random.random() < 0.5 else -1
 
-        self.x_vel = pos * abs(math.cos(angle) * self.MAX_VEL)
-        self.y_vel = math.sin(angle) * self.MAX_VEL
+        self.x_vel = pos * abs(math.cos(angle) * self.MAX_VEL) * BALL_MULTIPLIER
+        self.y_vel = math.sin(angle) * self.MAX_VEL * BALL_MULTIPLIER
 
     def _get_random_angle(self, min_angle, max_angle, excluded):
         angle = 0
@@ -36,8 +36,8 @@ class Ball:
         self.y = self.original_y
 
         angle = self._get_random_angle(-30, 30, [0])
-        x_vel = abs(math.cos(angle) * self.MAX_VEL)
-        y_vel = math.sin(angle) * self.MAX_VEL
+        x_vel = abs(math.cos(angle) * self.MAX_VEL) * BALL_MULTIPLIER
+        y_vel = math.sin(angle) * self.MAX_VEL * BALL_MULTIPLIER
 
         self.y_vel = y_vel
         self.x_vel *= -1
