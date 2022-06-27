@@ -192,10 +192,7 @@ class Game:
         if index == 0:
             self.move_paddle(left, up = True)
         if index == 1:
-            pass
-        if index == 2:
             self.move_paddle(left, up = False)
-        
         return self.ball.y
 
 
