@@ -29,7 +29,8 @@ class Game:
     def __init__(self, window, window_width, window_height):
         self.window_width = window_width
         self.window_height = window_height
-
+        
+        self.current_gem_left_hits = 0
         self.left_paddle = Paddle(
             10, self.window_height // 2 - Paddle.HEIGHT // 2)
         self.right_paddle = Paddle(
@@ -82,6 +83,7 @@ class Game:
             if ball.y >= left_paddle.y and ball.y <= left_paddle.y + Paddle.HEIGHT:
                 if ball.x - ball.RADIUS <= left_paddle.x + Paddle.WIDTH:
                     ball.x_vel *= -1
+                    self.current_gem_left_hits += 1
 
                     middle_y = left_paddle.y + Paddle.HEIGHT / 2
                     difference_in_y = middle_y - ball.y
@@ -156,12 +158,14 @@ class Game:
         if self.ball.x < 0:
             self.ball.reset()
             self.right_score += 1
+            self.current_gem_left_hits = 0
             # if(self.right_score == 3):
                 # self.done = True
                 # self.won = 'right' 
         elif self.ball.x > self.window_width:
             self.ball.reset()
             self.left_score += 1
+            self.current_gem_left_hits = 0
             # if(self.left_score == 3):
                 # self.done = True
                 # self.won = 'left'
