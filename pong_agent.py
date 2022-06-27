@@ -7,6 +7,8 @@ from model import Linear_QNet, QTrainer
 from helper import plot
 from pong import Game
 import pygame
+
+from pong.game import GameInformation
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
 LR = 0.001
@@ -20,7 +22,6 @@ class Agent:
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
         self.model = Linear_QNet(4, 256, 3, name)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
-
 
     def get_state(self, game, left):
         ball = game.ball
@@ -95,10 +96,7 @@ def train_pong():
     clock = pygame.time.Clock()
 
     run = True
-    prev_left_hits = 0
-    prev_right_score = 0
-    prev_left_score = 0
-    prev_right_hits = 0
+    prev_game_info = GameInformation(0,0,0,0)
     done = False
     while run:
         clock.tick(500)
@@ -112,41 +110,12 @@ def train_pong():
         ball_y = game.play_predicted_move(False, final_move2)
         game_info = game.loop()
         
+        reward, reward2 = add_rewards(game_info, ball_y, final_move, game, prev_game_info)
         
-        if game_info.left_hits > prev_left_hits:
-            reward = 20
-            prev_left_hits = game_info.left_hits
-        else:
-            reward = 0
-        
-        if game_info.right_score > prev_right_score:
-            if ball_y < game.left_paddle.y:
-                if final_move[0] != 1:
-                    reward -= 10
-                if final_move[0] == 1:
-                    reward += 10
-            elif ball_y > game.left_paddle.y:
-                if final_move[2] != 1:
-                    reward -= 10
-                else:
-                    reward +=10
-            
-            prev_right_score = game_info.right_score
-            
-
-        
-        
-        if game_info.right_hits > prev_right_hits:
-            reward2 = 15
-            prev_right_hits = game_info.right_hits
-        else :
-            reward2 = 0
-
         state_new = agent.get_state(game, True)
         state_new2 = agent.get_state(game, False)
 
-
-        if game_info.right_score + game_info.left_score == 20:
+        if game_info.right_score + game_info.left_score == 20 or game_info.left_hits > 50:
             done = True
         else:
             done = False
@@ -161,22 +130,20 @@ def train_pong():
         agent.remember(state_old2, final_move2, reward2, state_new2, done)        
         
         if(done):
-            print('Game', agent.n_games, 'Left hits', game.left_hits,'Right hits',game.right_hits, 'Record:', record)
+            print('Game', agent.n_games, 'Left hits', game.left_hits,'Right hits',game.right_hits)
+            print('Game', agent.n_games, 'Left score', game.left_score,'Right score',game.right_score, 'Record:', record)
             game.reset()
             agent.n_games += 1
             agent.train_long_memory()
-            prev_left_hits = 0
-            prev_right_hits = 0
-            prev_left_score = 0
-            prev_right_score = 0
+            prev_game_info = GameInformation(0,0,0,0)
 
-            if game_info.left_hits > record:
-                record = game_info.left_hits
+            if game_info.left_score > record:
+                record = game_info.left_score
                 agent.model.save()
 
 
-            plot_scores.append(game_info.left_hits)
-            total_score += game_info.left_hits
+            plot_scores.append(game_info.left_score)
+            total_score += game_info.left_score
             mean_score = total_score / agent.n_games
             plot_mean_scores.append(mean_score)
             plot(plot_scores, plot_mean_scores)
@@ -184,6 +151,36 @@ def train_pong():
         game.draw(draw_score=True, draw_hits=True)
         pygame.display.update()
     
+
+def add_rewards(game_info, ball_y, final_move, game, prev_game_info):
+    if game_info.left_hits > prev_game_info.left_hits:
+        reward = 20
+        prev_game_info.left_hits = game_info.left_hits
+    else:
+        reward = 0
+    
+    if game_info.right_score > prev_game_info.right_score:
+        if ball_y < game.left_paddle.y:
+            if final_move[0] != 1:
+                reward -= 10
+            if final_move[0] == 1:
+                reward += 10
+        elif ball_y > game.left_paddle.y:
+            if final_move[2] != 1:
+                reward -= 10
+            else:
+                reward +=10
+        
+        prev_game_info.right_score = game_info.right_score
+    
+    if game_info.right_hits > prev_game_info.right_hits:
+        reward2 = 15
+        prev_game_info.right_hits = game_info.right_hits
+    else :
+        reward2 = 0
+    return reward, reward2
+
+
 
 if __name__ == '__main__':
     train_pong()
