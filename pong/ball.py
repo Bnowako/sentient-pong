@@ -35,7 +35,7 @@ class Ball:
         self.x = self.original_x
         self.y = self.original_y
 
-        angle = self._get_random_angle(-10, 10, [0])
+        angle = self._get_random_angle(-20, 20, [0])
         x_vel = abs(math.cos(angle) * self.MAX_VEL) * BALL_MULTIPLIER
         y_vel = math.sin(angle) * self.MAX_VEL * BALL_MULTIPLIER
 

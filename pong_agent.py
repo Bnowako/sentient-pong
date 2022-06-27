@@ -22,7 +22,7 @@ class Agent:
         self.epsilon = 1 # randomness
         self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
-        self.model = Linear_QNet(3, 256, 2, name)
+        self.model = Linear_QNet(4, 256, 2, name)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
 
@@ -32,15 +32,18 @@ class Agent:
         right_paddle = game.right_paddle
         
         paddle = left_paddle if left else right_paddle
+        velocity = 1 if ball.x_vel < 0 else -1
 
+        # distance =  abs(ball.x - paddle.x) / game.window_width
         dif_x = paddle.x - ball.x
         dif_y = paddle.y - ball.y 
-        velocity = ball.x_vel
-        # print(dif_y > 0,  dif_x / game.window_width, velocity > 0)
+        dif_x = paddle.x - ball.x
+        dif_y = paddle.y - ball.y 
         state = [
+            velocity,
             dif_y > 0,
+            dif_y < 0,
             dif_x / game.window_width,
-            velocity > 0
         ]
         return np.array(state, dtype=int)
 
@@ -154,8 +157,9 @@ def play_with_human():
     total_left_scores = []
     total_left_hits = []
     record = 0
-    agent2 = Agent("right-")
-    
+    agent = Agent("left-")
+    agent.model.load_state_dict(torch.load('model/left-model.pth'))
+
     height = 500
     width = 700
 
@@ -171,52 +175,49 @@ def play_with_human():
     while run:
         clock.tick(1000)
         
-        state_old2 = agent2.get_state(game, False)
+        state_old = agent.get_state(game, True)
 
-        final_move2 = agent2.get_action(state_old2)
 
-        ball_y = game.play_predicted_move(False, final_move2)
+        final_move = agent.get_action(state_old)
+
+        ball_y = game.play_predicted_move(True, final_move)
         game_info = game.loop()
         
-        reward, reward2 = add_rewards(game_info, ball_y, None, game, prev_game_info, final_move2)
+        reward, reward2 = add_rewards(game_info, ball_y, final_move, game, prev_game_info, None)
         
-        state_new2 = agent2.get_state(game, False)
+        state_new = agent.get_state(game, True)
 
-        if game_info.right_score + game_info.left_score == 50 or game.current_gem_left_hits > 30:
+        if game_info.right_score + game_info.left_score == 50:
             done = True
         else:
             done = False
         
-        
-        agent2.train_short_memory(state_old2, final_move2, reward2, state_new2, done)
-
-        agent2.remember(state_old2, final_move2, reward2, state_new2, done)        
-        
+        agent.train_short_memory(state_old, final_move, reward, state_new, done)
+        agent.remember(state_old, final_move, reward, state_new, done)    
         
         keys = pygame.key.get_pressed()
         
         if keys[pygame.K_w]:
             print('W')
-            game.move_paddle(left=True, up=True)
+            game.move_paddle(left=False, up=True)
         elif keys[pygame.K_s]:
-            game.move_paddle(left=True, up=False)
+            game.move_paddle(left=False, up=False)
 
 
         if(done):
-            print('Game', agent2.n_games,'Right hits',game.right_hits)
-            print('Game', agent2.n_games, 'Left score', game.left_score,'Right score',game.right_score, 'Record:', record)
+            print('Game', agent.n_games,'Right hits',game.right_hits)
+            print('Game', agent.n_games, 'Left score', game.left_score,'Right score',game.right_score, 'Record:', record)
             game.reset()
-            agent2.n_games += 1
-            agent2.train_long_memory()
-            agent2.train_long_memory()
+            agent.n_games += 1
+            agent.train_long_memory()
             prev_game_info = GameInformation(0,0,0,0)
 
             if game_info.left_score > record:
                 record = game_info.left_score
-                agent2.model.save()
+                agent.model.save()
 
             # plot_results(plt_left_scores, total_left_scores, plt_mean_left_scores, agent, game_info.left_score)
-            plot_results(plt_left_hits, total_left_hits, plt_mean_left_hits, agent2, game_info.left_hits)
+            plot_results(plt_left_hits, total_left_hits, plt_mean_left_hits, agent, game_info.left_hits)
 
         game.draw(draw_score=True, draw_hits=True)
         pygame.display.update()
@@ -225,7 +226,7 @@ def play_with_human():
 
 def add_rewards(game_info, ball_y, final_move, game, prev_game_info, final_move2):
     if game_info.left_hits > prev_game_info.left_hits:
-        reward = 20
+        reward = 15
         prev_game_info.left_hits = game_info.left_hits
     else:
         reward = 0
@@ -249,18 +250,18 @@ def add_rewards(game_info, ball_y, final_move, game, prev_game_info, final_move2
         prev_game_info.right_hits = game_info.right_hits
     else :
         reward2 = 0
-
-    if game_info.left_score > prev_game_info.left_score:
-        if ball_y < game.right_paddle.y:
-            if final_move2[0] != 1:
-                reward2 -= 10
-            if final_move2[0] == 1:
-                reward2 += 10
-        elif ball_y > game.right_paddle.y:
-            if final_move2[2] != 1:
-                reward2 -= 10
-            else:
-                reward2 +=10
+    if(final_move2 != None):
+        if game_info.left_score > prev_game_info.left_score:
+            if ball_y < game.right_paddle.y:
+                if final_move2[0] != 1:
+                    reward2 -= 10
+                if final_move2[0] == 1:
+                    reward2 += 10
+            elif ball_y > game.right_paddle.y:
+                if final_move2[2] != 1:
+                    reward2 -= 10
+                else:
+                    reward2 +=10
         
         prev_game_info.right_score = game_info.right_score
 
@@ -275,5 +276,5 @@ def plot_results(plt_scores, all_scores, mean_scores, agent, value):
 
 
 if __name__ == '__main__':
-    train_pong()
-    # play_with_human()
+    # train_pong()
+    play_with_human()
