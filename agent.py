@@ -22,6 +22,7 @@ class Agent:
         self.model = Linear_QNet(11, 256, 3)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
         if os.path.exists(f'./model/model.pth'):
+            print('LOAD')
             self.model.load_state_dict(torch.load(f'./model/model.pth'))
 
 
