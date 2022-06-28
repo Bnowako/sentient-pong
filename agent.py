@@ -21,6 +21,7 @@ class Agent:
         self.gamma = gamma 
         self.memory = Memory()
         self.model = QNet(11, 256, 3)
+        # todo load model?
         if os.path.exists(f'./model/model.pth'):
             self.model.load_state_dict(torch.load(f'./model/model.pth'))
         self.trainer = Trainer(self.model, lr=learning_rate, gamma=self.gamma)
