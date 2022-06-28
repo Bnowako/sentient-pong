@@ -20,54 +20,29 @@ class Agent:
         self.gamma = 0.9 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
         self.model = Linear_QNet(11, 256, 3)
-        self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
         if os.path.exists(f'./model/model.pth'):
-            print('LOAD')
             self.model.load_state_dict(torch.load(f'./model/model.pth'))
+        self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
 
-    def get_state(self, game):
-        head = game.snake[0]
-        point_l = Point(head.x - 20, head.y)
-        point_r = Point(head.x + 20, head.y)
-        point_u = Point(head.x, head.y - 20)
-        point_d = Point(head.x, head.y + 20)
-        
-        dir_l = game.direction == Direction.LEFT
-        dir_r = game.direction == Direction.RIGHT
-        dir_u = game.direction == Direction.UP
-        dir_d = game.direction == Direction.DOWN
+    def get_state(self, env):
+        is_going_left = env.direction == Direction.LEFT
+        is_going_right = env.direction == Direction.RIGHT
+        is_going_up = env.direction == Direction.UP
+        is_going_down = env.direction == Direction.DOWN
 
-        state = [
-            # Danger straight
-            (dir_r and game.is_collision(point_r)) or 
-            (dir_l and game.is_collision(point_l)) or 
-            (dir_u and game.is_collision(point_u)) or 
-            (dir_d and game.is_collision(point_d)),
-
-            # Danger right
-            (dir_u and game.is_collision(point_r)) or 
-            (dir_d and game.is_collision(point_l)) or 
-            (dir_l and game.is_collision(point_u)) or 
-            (dir_r and game.is_collision(point_d)),
-
-            # Danger left
-            (dir_d and game.is_collision(point_r)) or 
-            (dir_u and game.is_collision(point_l)) or 
-            (dir_r and game.is_collision(point_u)) or 
-            (dir_l and game.is_collision(point_d)),
-            
+        state =  env.get_dangers() + [
             # Move direction
-            dir_l,
-            dir_r,
-            dir_u,
-            dir_d,
+            is_going_left,
+            is_going_right,
+            is_going_up,
+            is_going_down,
             
             # Food location 
-            game.food.x < game.head.x,  # food left
-            game.food.x > game.head.x,  # food right
-            game.food.y < game.head.y,  # food up
-            game.food.y > game.head.y  # food down
+            env.food.x < env.head.x,  # food left
+            env.food.x > env.head.x,  # food right
+            env.food.y < env.head.y,  # food up
+            env.food.y > env.head.y  # food down
             ]
 
         return np.array(state, dtype=int)
@@ -109,7 +84,6 @@ def train():
     record = 0
 
     agent = Agent()
-    
     env = Env(640, 480)
     clock = pygame.time.Clock()
     
@@ -148,6 +122,9 @@ def train():
             mean_score = total_score / agent.n_games
             plot_mean_scores.append(mean_score)
             plot(plot_scores, plot_mean_scores)
+        if agent.n_games == 100:
+            print('Game', agent.n_games, 'Score', score, 'Record:', record, 'MEAN: ', total_score / agent.n_games)
+            break
 
 
 if __name__ == '__main__':

@@ -83,6 +83,46 @@ class Env:
 
         return False
 
+    def get_dangers(self):
+        head = self.head
+        block_on_left = Point(head.x - BLOCK_SIZE, head.y)
+        block_on_right = Point(head.x + BLOCK_SIZE, head.y)
+        space_on_up = Point(head.x, head.y - BLOCK_SIZE)
+        block_on_down = Point(head.x, head.y + BLOCK_SIZE)
+
+        dangers = [
+            # Ahead
+            (self.is_dir_right() and self.is_collision(block_on_right)) or 
+            (self.is_dir_left() and self.is_collision(block_on_left)) or 
+            (self.is_dir_up() and self.is_collision(space_on_up)) or 
+            (self.is_dir_down() and self.is_collision(block_on_down)),
+
+            # Right
+            (self.is_dir_up() and self.is_collision(block_on_right)) or 
+            (self.is_dir_down() and self.is_collision(block_on_left)) or 
+            (self.is_dir_left() and self.is_collision(space_on_up)) or 
+            (self.is_dir_right() and self.is_collision(block_on_down)),
+
+            # Left
+            (self.is_dir_down() and self.is_collision(block_on_right)) or 
+            (self.is_dir_up() and self.is_collision(block_on_left)) or 
+            (self.is_dir_right() and self.is_collision(space_on_up)) or 
+            (self.is_dir_left() and self.is_collision(block_on_down)),
+            ]
+        
+        return dangers
+        
+    def is_dir_right(self):
+        return self.direction == Direction.RIGHT
+
+    def is_dir_left(self):
+        return self.direction == Direction.LEFT
+
+    def is_dir_up(self):
+        return self.direction == Direction.UP
+    
+    def is_dir_down(self):
+        return self.direction == Direction.DOWN
 
     def draw(self, display):
         display.fill(BLACK)
