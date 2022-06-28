@@ -14,21 +14,20 @@ from datetime import datetime
 from pong.game import GameInformation
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
-LR = 0.001
+LR = 0.00025
 
 class Agent:
 
     def __init__(self, name):
         self.n_games = 0
-        self.epsilon = 42 # randomness
-        self.gamma = 1 # discount rate
+        self.epsilon = 1 # randomness
+        self.gamma = 0.99 # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
         self.model = Linear_QNet(3, 128, 2, name)
         self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
         if os.path.exists(f'./model/{name}model.pth'):
             self.model.load_state_dict(torch.load(f'./model/{name}model.pth'))
     
-
     def get_state(self, game, left):
         ball = game.ball
         left_paddle = game.left_paddle
@@ -77,11 +76,8 @@ class Agent:
 
 
 def train_pong():
-    plt_left_scores = []
-    plt_mean_left_scores = []
     plt_left_hits = []
     plt_mean_left_hits = []
-    total_left_scores = []
     total_left_hits = []
     left_record = 0
     right_record = 0
@@ -110,9 +106,10 @@ def train_pong():
 
         game.play_predicted_move(True, final_move)
         ball, current_gem_left_hits = game.play_predicted_move(False, final_move2)
+        # todo! is this correct game_info?
         game_info = game.loop()
         
-        reward, reward2 = add_rewards(game_info, ball, final_move, game, prev_game_info, final_move2, current_gem_left_hits)
+        reward, reward2 = add_rewards(game_info, prev_game_info)
         
         state_new = agent.get_state(game, True)
         state_new2 = agent2.get_state(game, False)
@@ -137,11 +134,12 @@ def train_pong():
             agent2.train_long_memory()
             prev_game_info = GameInformation(0,0,0,0)
 
+            # IF the score is better, save model
             if game_info.left_score > left_record:
                 left_record = game_info.left_score
                 agent.model.save()
             if game_info.right_score > right_record:
-                left_record = game_info.right_score
+                right_record = game_info.right_score
                 agent2.model.save()
 
             # plot_results(plt_left_scores, total_left_scores, plt_mean_left_scores, agent, game_info.left_score)
@@ -183,7 +181,7 @@ def play_with_human():
         ball_y, current_gem_left_hits = game.play_predicted_move(True, final_move)
         game_info = game.loop()
         
-        reward, reward2 = add_rewards(game_info, ball_y, final_move, game, prev_game_info, None, current_gem_left_hits)
+        reward, reward2 = add_rewards(game_info, prev_game_info,)
         
         state_new = agent.get_state(game, True)
 
@@ -220,34 +218,29 @@ def play_with_human():
         pygame.event.pump()
     
 
-def add_rewards(game_info, ball, final_move, game, prev_game_info, final_move2, current_gem_left_hits):
+def add_rewards(game_info, prev_game_info):
+    #add reward to left_paddle model
     reward = 0
-
-    if game_info.left_score > prev_game_info.left_score:
-        if current_gem_left_hits >= 1:
-            reward += 1
-    elif game_info.left_hits > prev_game_info.left_hits:
+    if game_info.left_hits > prev_game_info.left_hits:
             reward += 1
     if game_info.right_score > prev_game_info.right_score:
         reward -= 1
     
+    #add reward to right_paddle model
+    reward2 = 0
     if game_info.right_hits > prev_game_info.right_hits:
-        reward2 = 15
-    else :
-        reward2 = 0
+        reward2 = 1
+    if game_info.left_score > prev_game_info.left_score:
+        reward2 -= 1
     
-    if(final_move2 != None):
-        if game_info.left_score > prev_game_info.left_score:
-            reward2 -= 10
-
     prev_game_info.left_score = game_info.left_score
     prev_game_info.right_score = game_info.right_score
     prev_game_info.right_hits = game_info.right_hits
     prev_game_info.left_hits = game_info.left_hits
 
 
-    if(reward != 0):
-        print(f'time:{datetime.now()}:  {reward} ')
+    # if(reward != 0):
+        # print(f'time:{datetime.now()}:  {reward} ')
     return reward, reward2
 
 def plot_results(plt_scores, all_scores, mean_scores, agent, value):
