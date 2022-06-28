@@ -1,3 +1,4 @@
+import threading
 import torch
 import random
 import numpy as np
@@ -8,21 +9,21 @@ from helper import plot
 import os
 import pygame
 from props import *
+
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
-LR = 0.001
 
 class Agent:
 
-    def __init__(self):
+    def __init__(self, gamma, epsilon, learning_rate):
         self.n_games = 0
-        self.epsilon = 0 # randomness
-        self.gamma = 0.9 # discount rate
+        self.epsilon = epsilon # randomness
+        self.gamma = gamma # discount rate
         self.memory = deque(maxlen=MAX_MEMORY) # popleft()
         self.model = Linear_QNet(11, 256, 3)
         if os.path.exists(f'./model/model.pth'):
             self.model.load_state_dict(torch.load(f'./model/model.pth'))
-        self.trainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
+        self.trainer = QTrainer(self.model, lr=learning_rate, gamma=self.gamma)
 
 
     def get_state(self, env):
@@ -30,11 +31,11 @@ class Agent:
         return np.array(state, dtype=int)
 
     def remember(self, state, action, reward, next_state, done):
-        self.memory.append((state, action, reward, next_state, done)) # popleft if MAX_MEMORY is reached
+        self.memory.append((state, action, reward, next_state, done))
 
     def train_long_memory(self):
         if len(self.memory) > BATCH_SIZE:
-            mini_sample = random.sample(self.memory, BATCH_SIZE) # list of tuples
+            mini_sample = random.sample(self.memory, BATCH_SIZE)
         else:
             mini_sample = self.memory
 
@@ -59,13 +60,13 @@ class Agent:
         return final_move
 
 
-def train():
+def train(number_of_games, gamma, epsilon, learning_rate):
     plot_scores = []
     plot_mean_scores = []
     total_score = 0
     record = 0
 
-    agent = Agent()
+    agent = Agent(gamma, epsilon, learning_rate)
     env = Env(640, 480)
     clock = pygame.time.Clock()
     
@@ -104,10 +105,10 @@ def train():
             mean_score = total_score / agent.n_games
             plot_mean_scores.append(mean_score)
             plot(plot_scores, plot_mean_scores)
-        if agent.n_games == 100:
+        if agent.n_games == number_of_games:
             print('Game', agent.n_games, 'Score', score, 'Record:', record, 'MEAN: ', total_score / agent.n_games)
             break
 
 
 if __name__ == '__main__':
-    train()
+    train(100, 0.9, 1, 0.001)
