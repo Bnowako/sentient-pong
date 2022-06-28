@@ -147,68 +147,6 @@ def train_pong():
 
         game.draw(draw_score=True, draw_hits=True)
         # pygame.display.update()
-
-def play_with_human():
-    record = 0
-    agent = Agent("left-")
-
-    height = 500
-    width = 700
-
-    win = pygame.display.set_mode((width, height))
-    game = Game(win, width, height)
-    
-    clock = pygame.time.Clock()
-
-    run = True
-    prev_game_info = GameInformation(0,0,0,0)
-    done = False
-    while run:
-        clock.tick(1000)
-        
-        state_old = agent.get_state(game, True)
-
-
-        final_move = agent.get_action(state_old)
-
-        game.play_predicted_move(True, final_move)
-        game_info = game.loop()
-        
-        reward = add_rewards(game_info, prev_game_info,)
-        
-        state_new = agent.get_state(game, True)
-
-        if game_info.right_score + game_info.left_score == 50:
-            done = True
-        else:
-            done = False
-        
-        agent.train_short_memory(state_old, final_move, reward, state_new, done)
-        agent.remember(state_old, final_move, reward, state_new, done)    
-        
-        keys = pygame.key.get_pressed()
-        
-        if keys[pygame.K_w]:
-            game.move_paddle(left=False, up=True)
-        elif keys[pygame.K_s]:
-            game.move_paddle(left=False, up=False)
-
-
-        if(done):
-            print('Game', agent.n_games,'Right hits',game.right_hits)
-            print('Game', agent.n_games, 'Left score', game.left_score,'Right score',game.right_score, 'Record:', record)
-            game.reset()
-            agent.n_games += 1
-            agent.train_long_memory()
-            prev_game_info = GameInformation(0,0,0,0)
-
-            if game_info.left_score > record:
-                record = game_info.left_score
-                agent.model.save()
-
-        game.draw(draw_score=True, draw_hits=True)
-        pygame.display.update()
-        pygame.event.pump()
     
 
 def add_rewards(game_info, prev_game_info):
