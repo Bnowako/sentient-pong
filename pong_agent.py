@@ -97,7 +97,7 @@ def train_pong():
     done = False
 
     while run:
-        clock.tick(600)
+        clock.tick(1000)
         state_old = agent.get_state(game, True)
         state_old2 = agent2.get_state(game, False)
 
@@ -146,7 +146,7 @@ def train_pong():
             plot_results(plt_left_hits, total_left_hits, plt_mean_left_hits, agent, game_info.left_hits)
 
         game.draw(draw_score=True, draw_hits=True)
-        pygame.display.update()
+        # pygame.display.update()
 
 def play_with_human():
     record = 0
@@ -245,5 +245,5 @@ def plot_results(plt_scores, all_scores, mean_scores, agent, value):
 
 
 if __name__ == '__main__':
-    # train_pong()
-    play_with_human()
+    train_pong()
+    # play_with_human()
