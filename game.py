@@ -21,7 +21,6 @@ class Env:
         self.h = h
         self.reset()
 
-
     def reset(self):
         # init game state
         self.direction = Direction.RIGHT
@@ -48,10 +47,9 @@ class Env:
     def step(self, action):
         self.frame_iteration += 1
         
-        self._move(action) # update the head
+        self._move(action) 
         self.snake.insert(0, self.head)
         
-        # 3. check if game over
         reward = 0
         game_over = False
         if self.is_collision() or self.frame_iteration > 100*len(self.snake):
@@ -59,7 +57,6 @@ class Env:
             reward = -10
             return reward, game_over, self.score
 
-        # 4. place new food or just move
         if self.head == self.food:
             self.score += 1
             reward = 10
@@ -67,17 +64,14 @@ class Env:
         else:
             self.snake.pop()
         
-        # 6. return game over and score
         return reward, game_over, self.score
 
 
     def is_collision(self, pt=None):
         if pt is None:
             pt = self.head
-        # hits boundary
         if pt.x > self.w - BLOCK_SIZE or pt.x < 0 or pt.y > self.h - BLOCK_SIZE or pt.y < 0:
             return True
-        # hits itself
         if pt in self.snake[1:]:
             return True
 
@@ -91,19 +85,16 @@ class Env:
         block_on_down = Point(head.x, head.y + BLOCK_SIZE)
 
         dangers = [
-            # Ahead
             (self.is_dir_right() and self.is_collision(block_on_right)) or 
             (self.is_dir_left() and self.is_collision(block_on_left)) or 
             (self.is_dir_up() and self.is_collision(space_on_up)) or 
             (self.is_dir_down() and self.is_collision(block_on_down)),
 
-            # Right
             (self.is_dir_up() and self.is_collision(block_on_right)) or 
             (self.is_dir_down() and self.is_collision(block_on_left)) or 
             (self.is_dir_left() and self.is_collision(space_on_up)) or 
             (self.is_dir_right() and self.is_collision(block_on_down)),
 
-            # Left
             (self.is_dir_down() and self.is_collision(block_on_right)) or 
             (self.is_dir_up() and self.is_collision(block_on_left)) or 
             (self.is_dir_right() and self.is_collision(space_on_up)) or 
@@ -156,19 +147,18 @@ class Env:
 
 
     def _move(self, action):
-        # [straight, right, left]
 
         clock_wise = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]
         idx = clock_wise.index(self.direction)
 
         if np.array_equal(action, [1, 0, 0]):
-            new_dir = clock_wise[idx] # no change
+            new_dir = clock_wise[idx]
         elif np.array_equal(action, [0, 1, 0]):
             next_idx = (idx + 1) % 4
-            new_dir = clock_wise[next_idx] # right turn r -> d -> l -> u
+            new_dir = clock_wise[next_idx]
         else: # [0, 0, 1]
             next_idx = (idx - 1) % 4
-            new_dir = clock_wise[next_idx] # left turn r -> u -> l -> d
+            new_dir = clock_wise[next_idx]
 
         self.direction = new_dir
 
