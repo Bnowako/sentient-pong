@@ -28,6 +28,7 @@ class Ball:
         pygame.draw.circle(win, (255, 255, 255), (self.x, self.y), self.RADIUS)
 
     def move(self):
+        print(f'X: {self.x} {self.x_vel}')
         self.x += self.x_vel
         self.y += self.y_vel
 

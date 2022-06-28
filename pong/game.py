@@ -1,6 +1,8 @@
 from .paddle import Paddle
 from .ball import Ball
+import pygame
 
+pygame.init()
 
 class GameInformation:
     def __init__(self, left_hits, right_hits, left_score, right_score):
@@ -18,11 +20,12 @@ class Game:
     Use the information returned from .loop() to determine when to end the game by calling
     .reset().
     """
+    SCORE_FONT = pygame.font.SysFont("comicsans", 50)
     WHITE = (255, 255, 255)
     BLACK = (0, 0, 0)
     RED = (255, 0, 0)
 
-    def __init__(self, window, window_width, window_height):
+    def __init__(self, window_width, window_height):
         self.window_width = window_width
         self.window_height = window_height
         
@@ -37,7 +40,38 @@ class Game:
         self.right_score = 0
         self.left_hits = 0
         self.right_hits = 0
-        self.window = window
+
+    def _draw_score(self, window):
+        left_score_text = self.SCORE_FONT.render(
+            f"{self.left_score}", 1, self.WHITE)
+        right_score_text = self.SCORE_FONT.render(
+            f"{self.right_score}", 1, self.WHITE)
+        window.blit(left_score_text, (self.window_width //
+                                           4 - left_score_text.get_width()//2, 20))
+        window.blit(right_score_text, (self.window_width * (3/4) -
+                                            right_score_text.get_width()//2, 20))
+
+    def _draw_hits(self, window):
+        hits_text = self.SCORE_FONT.render(
+            f"{self.left_hits + self.right_hits}", 1, self.RED)
+        window.blit(hits_text, (self.window_width //
+                                     2 - hits_text.get_width()//2, 10))
+
+
+    def draw(self, window,draw_score=True, draw_hits=False):
+        window.fill(self.BLACK)
+
+        if draw_score:
+            self._draw_score(window)
+
+        if draw_hits:
+            self._draw_hits(window)
+
+        for paddle in [self.left_paddle, self.right_paddle]:
+            paddle.draw(window)
+
+        self.ball.draw(window)
+
 
     def _handle_collision(self):
         ball = self.ball
@@ -132,11 +166,15 @@ class Game:
         self.right_hits = 0
 
     def step(self,left, move):
-        index = move.index(max(move))
-        if index[0] == 1:
+        # Up if move[0] is 1
+        # Down if move[1] is 1
+        if move[0] == 1:
             self.move_paddle(left, up = True)
-        if index[1] == 1:
+        if move[1] == 1:
             self.move_paddle(left, up = False)
-        return self.ball, self.current_gem_left_hits
-
-
+        self.loop()
+        
+        game_info = GameInformation(
+            self.left_hits, self.right_hits, self.left_score, self.right_score)
+        return game_info
+    
