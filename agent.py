@@ -7,7 +7,7 @@ from model import Linear_QNet, QTrainer
 from helper import plot
 import os
 import pygame
-
+from props import *
 MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
 LR = 0.001
@@ -106,8 +106,7 @@ def train():
     plot_mean_scores = []
     total_score = 0
     record = 0
-    SPEED = 1000
-    DRAW = False
+
     agent = Agent()
     
     env = Env(640, 480)

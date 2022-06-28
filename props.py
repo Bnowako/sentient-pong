@@ -1,0 +1,2 @@
+SPEED = 1000
+DRAW = False
