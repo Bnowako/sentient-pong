@@ -98,8 +98,6 @@ def train(number_of_games, gamma, epsilon, learning_rate):
                 record = score
                 agent.model.save()
 
-            print('Game', agent.n_games, 'Score', score, 'Record:', record)
-
             plot_scores.append(score)
             total_score += score
             mean_score = total_score / agent.n_games
@@ -112,3 +110,6 @@ def train(number_of_games, gamma, epsilon, learning_rate):
 
 if __name__ == '__main__':
     train(100, 0.9, 1, 0.001)
+    train(100, 1, 3, 0.00025)
+    train(100, 0.9, 1, 0.001)
+
