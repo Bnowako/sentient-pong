@@ -26,25 +26,7 @@ class Agent:
 
 
     def get_state(self, env):
-        is_going_left = env.direction == Direction.LEFT
-        is_going_right = env.direction == Direction.RIGHT
-        is_going_up = env.direction == Direction.UP
-        is_going_down = env.direction == Direction.DOWN
-
-        state =  env.get_dangers() + [
-            # Move direction
-            is_going_left,
-            is_going_right,
-            is_going_up,
-            is_going_down,
-            
-            # Food location 
-            env.food.x < env.head.x,  # food left
-            env.food.x > env.head.x,  # food right
-            env.food.y < env.head.y,  # food up
-            env.food.y > env.head.y  # food down
-            ]
-
+        state =  env.get_dangers() + env.get_directions_state() + env.get_food_location()
         return np.array(state, dtype=int)
 
     def remember(self, state, action, reward, next_state, done):

@@ -112,6 +112,14 @@ class Env:
         
         return dangers
         
+    def get_directions_state(self):
+        return [
+            self.is_dir_up(),
+            self.is_dir_right(),
+            self.is_dir_down(),
+            self.is_dir_left(),
+        ]
+
     def is_dir_right(self):
         return self.direction == Direction.RIGHT
 
@@ -123,6 +131,15 @@ class Env:
     
     def is_dir_down(self):
         return self.direction == Direction.DOWN
+
+    def get_food_location(self):
+        return [
+            self.food.x < self.head.x,
+            self.food.x > self.head.x, 
+            self.food.y < self.head.y, 
+            self.food.y > self.head.y 
+            ]
+
 
     def draw(self, display):
         display.fill(BLACK)
