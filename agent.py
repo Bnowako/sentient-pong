@@ -4,7 +4,8 @@ import random
 import numpy as np
 from collections import deque
 from game import Env, Direction, Point
-from model import Linear_QNet, QTrainer
+from model import QNet
+from trainer import Trainer
 from helper import plot
 import os
 import pygame
@@ -19,10 +20,10 @@ class Agent:
         self.epsilon = epsilon
         self.gamma = gamma 
         self.memory = Memory()
-        self.model = Linear_QNet(11, 256, 3)
+        self.model = QNet(11, 256, 3)
         if os.path.exists(f'./model/model.pth'):
             self.model.load_state_dict(torch.load(f'./model/model.pth'))
-        self.trainer = QTrainer(self.model, lr=learning_rate, gamma=self.gamma)
+        self.trainer = Trainer(self.model, lr=learning_rate, gamma=self.gamma)
 
 
     def get_state(self, env):
