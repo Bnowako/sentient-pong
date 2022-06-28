@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from IPython import display
 
 plt.ion()
-
+# todo Change this
 def plot(scores, mean_scores):
     display.clear_output(wait=True)
     display.display(plt.gcf())

@@ -130,6 +130,10 @@ class Env:
             self.food.y < self.head.y, 
             self.food.y > self.head.y 
             ]
+    
+    def get_state(self):
+        state =  self.get_dangers() + self.get_directions_state() + self.get_food_location()
+        return np.array(state, dtype=int)
 
 
     def draw(self, display):

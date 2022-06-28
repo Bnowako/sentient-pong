@@ -27,9 +27,7 @@ class Agent:
         self.trainer = Trainer(self.model, lr=learning_rate, gamma=self.gamma)
 
 
-    def get_state(self, env):
-        state =  env.get_dangers() + env.get_directions_state() + env.get_food_location()
-        return np.array(state, dtype=int)
+
 
     def train_long_memory(self):
         if self.memory.is_too_big():
@@ -71,7 +69,7 @@ def train(number_of_games, gamma, epsilon, learning_rate):
     if DRAW: 
         display = pygame.display.set_mode((640, 480))
     while True:
-        state_old = agent.get_state(env)
+        state_old = env.get_state()
 
         final_move = agent.get_action(state_old)
 
@@ -81,10 +79,9 @@ def train(number_of_games, gamma, epsilon, learning_rate):
             env.draw(display)
             clock.tick(SPEED)
 
-        state_new = agent.get_state(env)
+        state_new = env.get_state()
 
         agent.train_short_memory(state_old, final_move, reward, state_new, done)
-
         agent.memory.remember(state_old, final_move, reward, state_new, done)
 
         if done:
@@ -96,17 +93,33 @@ def train(number_of_games, gamma, epsilon, learning_rate):
                 record = score
                 agent.model.save()
 
+            
             plot_scores.append(score)
             total_score += score
             mean_score = total_score / agent.n_games
             plot_mean_scores.append(mean_score)
             plot(plot_scores, plot_mean_scores)
+        
         if agent.n_games == number_of_games:
             print('Game', agent.n_games, 'Score', score, 'Record:', record, 'MEAN: ', total_score / agent.n_games)
             break
 
 
 if __name__ == '__main__':
+    # 1.
+    # train snake 
+    #   - load prev model
+    #   - train snake with draw ON
+    # 2. 
+    # Compare different parameters
+    #   Games count?
+    #       - 3 
+    #   Epsilon?
+    #       - 3
+    #   Gamma
+    #       - 2
+    #    
+
     train(100, 0.9, 1, 0.001)
     train(100, 1, 3, 0.00025)
     train(100, 0.9, 1, 0.001)
