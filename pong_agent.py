@@ -149,17 +149,11 @@ def train_pong():
         pygame.display.update()
 
 def play_with_human():
-    plt_left_scores = []
-    plt_mean_left_scores = []
-    plt_left_hits = []
-    plt_mean_left_hits = []
-    total_left_scores = []
-    total_left_hits = []
     record = 0
     agent = Agent("left-")
 
     height = 500
-    width = 1000
+    width = 700
 
     win = pygame.display.set_mode((width, height))
     game = Game(win, width, height)
@@ -169,7 +163,6 @@ def play_with_human():
     run = True
     prev_game_info = GameInformation(0,0,0,0)
     done = False
-
     while run:
         clock.tick(1000)
         
@@ -178,10 +171,10 @@ def play_with_human():
 
         final_move = agent.get_action(state_old)
 
-        ball_y, current_gem_left_hits = game.play_predicted_move(True, final_move)
+        game.play_predicted_move(True, final_move)
         game_info = game.loop()
         
-        reward, reward2 = add_rewards(game_info, prev_game_info,)
+        reward = add_rewards(game_info, prev_game_info,)
         
         state_new = agent.get_state(game, True)
 
@@ -252,5 +245,5 @@ def plot_results(plt_scores, all_scores, mean_scores, agent, value):
 
 
 if __name__ == '__main__':
-    train_pong()
-    # play_with_human()
+    # train_pong()
+    play_with_human()
