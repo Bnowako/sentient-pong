@@ -137,15 +137,15 @@ class Env:
 
 
     def draw(self, display):
-        display.fill(BLACK)
+        display.fill(WHITE)
 
         for pt in self.snake:
-            pygame.draw.rect(display, BLUE1, pygame.Rect(pt.x, pt.y, BLOCK_SIZE, BLOCK_SIZE))
-            pygame.draw.rect(display, BLUE2, pygame.Rect(pt.x+4, pt.y+4, 12, 12))
+            pygame.draw.rect(display, DARK_GREEN, pygame.Rect(pt.x, pt.y, BLOCK_SIZE, BLOCK_SIZE))
+            pygame.draw.rect(display, GREEN, pygame.Rect(pt.x + 4, pt.y + 4, 12, 12))
 
         pygame.draw.rect(display, RED, pygame.Rect(self.food.x, self.food.y, BLOCK_SIZE, BLOCK_SIZE))
 
-        text = font.render("Score: " + str(self.score), True, WHITE)
+        text = font.render("Points in this game: " + str(self.score), True, GREY)
         display.blit(text, [0, 0])
         pygame.display.flip()
 
