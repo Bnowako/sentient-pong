@@ -1,7 +1,7 @@
 SPEED = 10000
 DRAW = False
-
-
+MAX_MEMORY=100_000
+BATCH_SIZE = 1000
 # rgb colors
 WHITE = (255, 255, 255)
 RED = (200,0,0)

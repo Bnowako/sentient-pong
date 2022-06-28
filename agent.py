@@ -9,17 +9,16 @@ from helper import plot
 import os
 import pygame
 from props import *
+from memory import Memory
 
-MAX_MEMORY = 100_000
-BATCH_SIZE = 1000
 
 class Agent:
 
     def __init__(self, gamma, epsilon, learning_rate):
         self.n_games = 0
-        self.epsilon = epsilon # randomness
-        self.gamma = gamma # discount rate
-        self.memory = deque(maxlen=MAX_MEMORY) # popleft()
+        self.epsilon = epsilon
+        self.gamma = gamma 
+        self.memory = Memory()
         self.model = Linear_QNet(11, 256, 3)
         if os.path.exists(f'./model/model.pth'):
             self.model.load_state_dict(torch.load(f'./model/model.pth'))
@@ -30,14 +29,11 @@ class Agent:
         state =  env.get_dangers() + env.get_directions_state() + env.get_food_location()
         return np.array(state, dtype=int)
 
-    def remember(self, state, action, reward, next_state, done):
-        self.memory.append((state, action, reward, next_state, done))
-
     def train_long_memory(self):
-        if len(self.memory) > BATCH_SIZE:
-            mini_sample = random.sample(self.memory, BATCH_SIZE)
+        if self.memory.is_too_big():
+            mini_sample = random.sample(self.memory.memory, BATCH_SIZE)
         else:
-            mini_sample = self.memory
+            mini_sample = self.memory.memory
 
         states, actions, rewards, next_states, dones = zip(*mini_sample)
         self.trainer.train_step(states, actions, rewards, next_states, dones)
@@ -87,7 +83,7 @@ def train(number_of_games, gamma, epsilon, learning_rate):
 
         agent.train_short_memory(state_old, final_move, reward, state_new, done)
 
-        agent.remember(state_old, final_move, reward, state_new, done)
+        agent.memory.remember(state_old, final_move, reward, state_new, done)
 
         if done:
             env.reset()
