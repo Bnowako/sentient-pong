@@ -164,7 +164,7 @@ if __name__ == '__main__':
     ]
         answers = inquirer.prompt(iterations)
         print('watchTrainedModel')
-        train(answers['iterations'], 0.9, 1, 0.001, False)
+        train(int(answers['iterations']), 0.9, 1, 0.001, False)
 
     if run_model_type == 'trainFromBeginning':
         print('trainFromBeginning')
