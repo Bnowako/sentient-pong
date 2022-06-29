@@ -5,8 +5,6 @@ from matplotlib import cycler
 
 plt.ion()
 
-
-# todo Change this
 def scores_chart(scores, mean_scores):
     display.clear_output(wait=True)
     display.display(plt.gcf())
