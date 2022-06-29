@@ -1,15 +1,13 @@
-from enum import Enum
 import torch
 import random
 from game import Env
 from model import QNet
 from trainer import Trainer
-from helper import scores_chart
+from charts import scores_chart, comparison_chart
 import os
 import pygame
 from props import *
 from memory import Memory
-import numpy as np
 from pprint import pprint
 import inquirer
 
@@ -21,9 +19,8 @@ class Agent:
         self.epsilon = epsilon
         self.gamma = gamma
         self.memory = Memory()
-        # todo load model?
-        if os.path.exists('model_scripted.pt'):
-            self.model = torch.jit.load('model_scripted.pt')
+        if os.path.exists('snake_ai_model.pt'):
+            self.model = torch.jit.load('snake_ai_model.pt')
             self.model.eval()
         else:
             self.model = QNet(11, 256, 3)
@@ -79,7 +76,7 @@ def train(number_of_games, gamma, epsilon, learning_rate, train_from_beginning):
     env = Env(640, 480)
     clock = pygame.time.Clock()
 
-    if DRAW:
+    if is_gui_visible:
         display = pygame.display.set_mode((640, 480))
     while True:
         state_old = env.get_state()
@@ -88,7 +85,7 @@ def train(number_of_games, gamma, epsilon, learning_rate, train_from_beginning):
 
         reward, done, score = env.step(final_move)
 
-        if DRAW:
+        if is_gui_visible:
             env.draw(display)
             clock.tick(SPEED)
 
@@ -112,7 +109,7 @@ def train(number_of_games, gamma, epsilon, learning_rate, train_from_beginning):
                     record = int(f.read())
                     f.close()
                     model_scripted = torch.jit.script(agent.model)  # Export to TorchScript
-                    model_scripted.save('model_scripted.pt')
+                    model_scripted.save('snake_ai_model.pt')
 
             plot_scores.append(score)
             total_score += score
@@ -121,63 +118,55 @@ def train(number_of_games, gamma, epsilon, learning_rate, train_from_beginning):
             scores_chart(plot_scores, plot_mean_scores)
 
         if agent.n_games == number_of_games:
-            print('Game', agent.n_games, 'Score', score, 'Record:', record, 'MEAN: ', total_score / agent.n_games)
+            average_score = total_score / agent.n_games
+            print('Game', agent.n_games, 'Score', score, 'Record:', record, 'MEAN: ', average_score)
             break
 
-    return record
+    return average_score
 
 
 if __name__ == '__main__':
-    # 1.
-    # train snake 
-    #   - load prev model
-    #   - train snake with draw ON
-    # 2. 
-    # Compare different parameters
-    #   Games count?
-    #       - 3 
-    #   Epsilon?
-    #       - 3
-    #   Gamma
-    #       - 2
-    #
-
-    # class TrainingType(Enum):
-    #     RUN_TRAINED_MODEL = "Run trained model"
-    #     COMPARE_MODELS = "Compare models with different parameters"
-    #
-    #
-    questions = [
+    run_model_type_questions = [
         inquirer.List(
-            "runModelType",
+            "run_model_type",
             message="How do you want to run our model?",
-            choices=['watchTrainedModel', 'trainFromBeginning'],
+            choices=['watchTrainedModel', 'trainFromBeginning', 'compareModels'],
         ),
     ]
 
-    answers = inquirer.prompt(questions)
-    pprint(answers['runModelType'])
+    answers = inquirer.prompt(run_model_type_questions)
+    pprint(answers['run_model_type'])
 
-    runModelType = answers['runModelType']
-    #
-    # # IT DOESNT READ THIS VALUE
-    #
-    if runModelType == 'watchTrainedModel':
+    run_model_type = answers['run_model_type']
+
+    display_gui_questions = [
+        inquirer.List(
+            "display_gui",
+            message="Do you want to see snake gui? (training might take more time)",
+            choices=['yes', 'no'],
+        ),
+    ]
+
+    answers = inquirer.prompt(display_gui_questions)
+    pprint(answers['display_gui'])
+
+    display_gui = answers['display_gui']
+    is_gui_visible = display_gui == 'yes'
+
+    if run_model_type == 'watchTrainedModel':
         print('watchTrainedModel')
         train(100, 0.9, 1, 0.001, False)
+        train(100, 1, 3, 0.00025, False)
+        train(100, 0.9, 1, 0.001, False)
 
-    if runModelType == 'trainFromBeginning':
+    if run_model_type == 'trainFromBeginning':
         print('trainFromBeginning')
         train(100, 0.9, 1, 0.001, True)
+        train(100, 1, 3, 0.00025, True)
+        train(100, 0.9, 1, 0.001, True)
 
-    # train(10000, 0.9, 1, 0.001)
-    # train(1000, 1, 3, 0.00025)
-    # train(1000, 0.9, 1, 0.001)
-    #
-    # record1 = train(100, 0.9, 1, 0.001)
-    # record2 = train(100, 1, 3, 0.00025)
-    # record3 = train(100, 0.9, 1, 0.001)
-    #
-    # print('record1 {}: '.format(record1))
-    # print('record2 {}: '.format(record2))
-    # print('record3 {}: '.format(record3))
+    if run_model_type == 'compareModels':
+        print('compareModels')
+        trained_model_average_score = train(100, 0.9, 1, 0.001, False)
+        not_trained_model_average_score = train(100, 0.9, 1, 0.001, True)
+        comparison_chart(trained_model_average_score, not_trained_model_average_score)

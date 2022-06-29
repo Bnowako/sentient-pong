@@ -18,7 +18,7 @@ class QNet(nn.Module):
     #
     # def save(self):
     #     model_scripted = torch.jit.script(self)  # Export to TorchScript
-    #     model_scripted.save('model_scripted.pt')
+    #     model_scripted.save('snake_ai_model.pt')
 
     def get_model(self):
         return torch.load(f'./model/model.pth')
