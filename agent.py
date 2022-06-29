@@ -20,6 +20,7 @@ class Agent:
         self.gamma = gamma
         self.memory = Memory()
         if os.path.exists('snake_ai_model.pt'):
+            print('train')
             self.model = torch.jit.load('snake_ai_model.pt')
             self.model.eval()
         else:
@@ -154,10 +155,16 @@ if __name__ == '__main__':
     is_gui_visible = display_gui == 'yes'
 
     if run_model_type == 'watchTrainedModel':
+        iterations = [
+        inquirer.List(
+            "iterations",
+            message="Do you want to see snake gui? (training might take more time)",
+            choices=['100','500', '1000'],
+        ),
+    ]
+        answers = inquirer.prompt(iterations)
         print('watchTrainedModel')
-        train(100, 0.9, 1, 0.001, False)
-        train(100, 1, 3, 0.00025, False)
-        train(100, 0.9, 1, 0.001, False)
+        train(answers['iterations'], 0.9, 1, 0.001, False)
 
     if run_model_type == 'trainFromBeginning':
         print('trainFromBeginning')
