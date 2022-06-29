@@ -34,3 +34,6 @@ Na wyjściu mamy 3 stany, które mapujemy na akcje -> prosto, w prawo, w lewo
 256 neuronów warstwy ukrytej.
 
 Po przegranej grze snake dostaje ujemne punkty, po wygranej dodatnie.
+
+## Wniosek
+Snake gubi się gdy jest dłuższy, prawdopodobnie dlatego, że `widzi` tylko na jedną kratkę. W ramach udoskonalenia projektu moglibyśmy pomyśleć o innych danych wejściowych, które by pozwoliły snakeowi na lepsza grę.
