@@ -1,16 +1,36 @@
-Readme in progress...
+# Snake
 
-`python3 -m venv env`
+## Intro
+Przykładowo, gdy idzie w prawo, może poruszyć się w górę, w dół, lub w dalej w prawo.
+W dalszej części będziemy o kierunkach mówić względem węża -> (gdy porusza się w prawo, nasza góra jest jego lewą stroną). I `bezwzględnych` -> względem nas :D
+Dlatego wąż, może poruszać się prosto, w lewo lub w prawo względem węża, ale też w górę, dół, prawo, lewo bezwzględnie
 
-`source env/bin/activate`
+## Model
+Wykorzystaliśmy Reinforcement learning, który pozwala naszemu modelowi uczyć się w środowisku, jakim jest gra.
 
-`pip install --upgrade pip`
+### Wejście
+Model składa się z 11 neuronów wejściowych
+3 neurony odpowiadają za jego `wzrok`
+- Czy przed nim, znajduje się niebezpieczeństwo
+- Czy po prawej znajduje się niebezpieczeństwo
+- Czy po lewej znajduje się niebezpieczeństwo
 
-`pip install -r requirements.txt`
+Kolejne z bezwględnego kierunku
+- W górę?
+- W dół?
+- W prawo?
+- W lewo?
 
-`python3 agent.py`
+Kolejne, z lokalizacji jabłka
+- Czy jabłko jest nad głową?
+- Czy jabłko jest pod głową?
+- Czy jabłko jest po prawej od głowy?
+- Czy jabłko jest po lewej od głowy?
 
+### Wyjście
+Na wyjściu mamy 3 stany, które mapujemy na akcje -> prosto, w prawo, w lewo
 
-| You can change props in props.py
- - set SPEED to framerate you want to get
- - set DRAW=True
+### Warstwa ukryta
+256 neuronów warstwy ukrytej.
+
+Po przegranej grze snake dostaje ujemne punkty, po wygranej dodatnie.
