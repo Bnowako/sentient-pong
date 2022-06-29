@@ -156,12 +156,12 @@ if __name__ == '__main__':
 
     if run_model_type == 'watchTrainedModel':
         iterations = [
-        inquirer.List(
-            "iterations",
-            message="Do you want to see snake gui? (training might take more time)",
-            choices=['100','500', '1000'],
-        ),
-    ]
+            inquirer.List(
+                "iterations",
+                message="Choose the number of games",
+                choices=['100', '500', '1000'],
+            ),
+        ]
         answers = inquirer.prompt(iterations)
         print('watchTrainedModel')
         train(int(answers['iterations']), 0.9, 1, 0.001, False)
