@@ -4,6 +4,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 import os
 
+
 class QNet(nn.Module):
     def __init__(self, input_size, hidden_size, output_size):
         super().__init__()
@@ -14,13 +15,10 @@ class QNet(nn.Module):
         x = F.relu(self.linear1(x))
         x = self.linear2(x)
         return x
+    #
+    # def save(self):
+    #     model_scripted = torch.jit.script(self)  # Export to TorchScript
+    #     model_scripted.save('model_scripted.pt')
 
-    def save(self, file_name='model.pth'):
-        model_folder_path = './model'
-        if not os.path.exists(model_folder_path):
-            os.makedirs(model_folder_path)
-
-        file_name = os.path.join(model_folder_path, file_name)
-        torch.save(self.state_dict(), file_name)
-
-
+    def get_model(self):
+        return torch.load(f'./model/model.pth')

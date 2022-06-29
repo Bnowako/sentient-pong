@@ -1,16 +1,17 @@
-import threading
+from enum import Enum
 import torch
 import random
-import numpy as np
-from collections import deque
-from game import Env, Direction, Point
+from game import Env
 from model import QNet
 from trainer import Trainer
-from helper import plot
+from helper import scores_chart
 import os
 import pygame
 from props import *
 from memory import Memory
+import numpy as np
+from pprint import pprint
+import inquirer
 
 
 class Agent:
@@ -18,16 +19,16 @@ class Agent:
     def __init__(self, gamma, epsilon, learning_rate):
         self.n_games = 0
         self.epsilon = epsilon
-        self.gamma = gamma 
+        self.gamma = gamma
         self.memory = Memory()
-        self.model = QNet(11, 256, 3)
         # todo load model?
-        if os.path.exists(f'./model/model.pth'):
-            self.model.load_state_dict(torch.load(f'./model/model.pth'))
+        if os.path.exists('model_scripted.pt'):
+            self.model = torch.jit.load('model_scripted.pt')
+            self.model.eval()
+        else:
+            self.model = QNet(11, 256, 3)
+        print(self.model)
         self.trainer = Trainer(self.model, lr=learning_rate, gamma=self.gamma)
-
-
-
 
     def train_long_memory(self):
         if self.memory.is_too_big():
@@ -43,7 +44,7 @@ class Agent:
 
     def get_action(self, state):
         self.epsilon = 80 - self.n_games
-        final_move = [0,0,0]
+        final_move = [0, 0, 0]
         if random.randint(0, 200) < self.epsilon:
             move = random.randint(0, 2)
             final_move[move] = 1
@@ -56,17 +57,29 @@ class Agent:
         return final_move
 
 
-def train(number_of_games, gamma, epsilon, learning_rate):
+def train(number_of_games, gamma, epsilon, learning_rate, train_from_beginning):
     plot_scores = []
     plot_mean_scores = []
     total_score = 0
-    record = 0
 
     agent = Agent(gamma, epsilon, learning_rate)
+    if train_from_beginning:
+        agent.model = QNet(11, 256, 3)
+        agent.trainer = Trainer(agent.model, lr=learning_rate, gamma=agent.gamma)
+        record = 0
+    else:
+        f = open('record.txt', 'r')
+        record = int(f.read())
+        f.close()
+
+    print(agent.model)
+    print('Record:')
+    print(record)
+
     env = Env(640, 480)
     clock = pygame.time.Clock()
-    
-    if DRAW: 
+
+    if DRAW:
         display = pygame.display.set_mode((640, 480))
     while True:
         state_old = env.get_state()
@@ -74,7 +87,7 @@ def train(number_of_games, gamma, epsilon, learning_rate):
         final_move = agent.get_action(state_old)
 
         reward, done, score = env.step(final_move)
-        
+
         if DRAW:
             env.draw(display)
             clock.tick(SPEED)
@@ -91,18 +104,27 @@ def train(number_of_games, gamma, epsilon, learning_rate):
 
             if score > record:
                 record = score
-                agent.model.save()
+                if not train_from_beginning:
+                    f = open('record.txt', 'w')
+                    f.write(str(record))
+                    f.close()
+                    f = open('record.txt', 'r')
+                    record = int(f.read())
+                    f.close()
+                    model_scripted = torch.jit.script(agent.model)  # Export to TorchScript
+                    model_scripted.save('model_scripted.pt')
 
-            
             plot_scores.append(score)
             total_score += score
             mean_score = total_score / agent.n_games
             plot_mean_scores.append(mean_score)
-            plot(plot_scores, plot_mean_scores)
-        
+            scores_chart(plot_scores, plot_mean_scores)
+
         if agent.n_games == number_of_games:
             print('Game', agent.n_games, 'Score', score, 'Record:', record, 'MEAN: ', total_score / agent.n_games)
             break
+
+    return record
 
 
 if __name__ == '__main__':
@@ -118,9 +140,44 @@ if __name__ == '__main__':
     #       - 3
     #   Gamma
     #       - 2
-    #    
+    #
 
-    train(100, 0.9, 1, 0.001)
-    train(100, 1, 3, 0.00025)
-    train(100, 0.9, 1, 0.001)
+    # class TrainingType(Enum):
+    #     RUN_TRAINED_MODEL = "Run trained model"
+    #     COMPARE_MODELS = "Compare models with different parameters"
+    #
+    #
+    questions = [
+        inquirer.List(
+            "runModelType",
+            message="How do you want to run our model?",
+            choices=['watchTrainedModel', 'trainFromBeginning'],
+        ),
+    ]
 
+    answers = inquirer.prompt(questions)
+    pprint(answers['runModelType'])
+
+    runModelType = answers['runModelType']
+    #
+    # # IT DOESNT READ THIS VALUE
+    #
+    if runModelType == 'watchTrainedModel':
+        print('watchTrainedModel')
+        train(100, 0.9, 1, 0.001, False)
+
+    if runModelType == 'trainFromBeginning':
+        print('trainFromBeginning')
+        train(100, 0.9, 1, 0.001, True)
+
+    # train(10000, 0.9, 1, 0.001)
+    # train(1000, 1, 3, 0.00025)
+    # train(1000, 0.9, 1, 0.001)
+    #
+    # record1 = train(100, 0.9, 1, 0.001)
+    # record2 = train(100, 1, 3, 0.00025)
+    # record3 = train(100, 0.9, 1, 0.001)
+    #
+    # print('record1 {}: '.format(record1))
+    # print('record2 {}: '.format(record2))
+    # print('record3 {}: '.format(record3))
